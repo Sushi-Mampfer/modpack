@@ -1,12 +1,25 @@
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ssr")]
-use sqlx::SqlitePool;
 
 #[cfg(feature = "ssr")]
 #[derive(Clone)]
 pub struct AppState {
-    pub pool: SqlitePool,
+    pub pool: sqlx::sqlite::SqlitePool,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Pack {}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Pack {
+    pub name: String,
+    pub mods: Vec<Mod>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Mod {
+    pub slug: String,
+    pub votes: i32,
+}
+
+#[derive(Deserialize)]
+pub struct FullMod {
+    title: String,
+    description: String,
+}

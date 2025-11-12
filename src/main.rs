@@ -1,4 +1,5 @@
 pub mod app;
+pub mod api;
 pub mod pages;
 pub mod types;
 
@@ -40,11 +41,28 @@ async fn main() {
 
     query(
         r#"
-        CREATE TABLE mods (
+        CREATE TABLE IF NOT EXISTS mods (
 	        pack	TEXT NOT NULL,
 	        slug	TEXT NOT NULL,
 	        time	INTEGER NOT NULL,
-	        ip	TEXT
+	        ip	    TEXT,
+            UNIQUE  (pack, slug)
+        )
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    query(
+        r#"
+        CREATE TABLE IF NOT EXISTS votes (
+	        pack	TEXT NOT NULL,
+	        slug	TEXT NOT NULL,
+	        time	INTEGER NOT NULL,
+            upvote  INTEGER NOT NULL,
+	        ip	    TEXT,
+            UNIQUE (pack, slug, ip)
         )
     "#,
     )
