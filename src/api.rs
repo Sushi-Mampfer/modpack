@@ -1,10 +1,14 @@
-use leptos::{prelude::{ServerFnError, use_context}, server};
 use crate::types::{Mod, Pack};
+use chrono::Utc;
+use leptos::{
+    prelude::{use_context, ServerFnError},
+    server,
+};
+#[cfg(feature = "ssr")]
+use sqlx::{query, Row};
 
 #[server]
 pub async fn fetch_pack(pack: String) -> Result<Pack, ServerFnError> {
-    use sqlx::{Row, query};
-
     let state = use_context::<crate::types::AppState>().unwrap();
 
     let rows = query(
@@ -18,11 +22,86 @@ pub async fn fetch_pack(pack: String) -> Result<Pack, ServerFnError> {
         LEFT JOIN votes v ON p.id = v.pack AND m.slug = v.slug
         WHERE p.id = ?
         GROUP BY m.slug
-    "#).bind(pack).fetch_all(&state.pool).await.unwrap();
+    "#,
+    )
+    .bind(pack)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap();
     let pack = Pack {
         name: rows[0].get("name"),
-        mods: rows.iter().map(|r| Mod { slug: r.get("slug"), votes: r.get("votes") }).collect(),
+        mods: rows
+            .iter()
+            .map(|r| Mod {
+                slug: r.get("slug"),
+                votes: r.get("votes"),
+            })
+            .collect(),
     };
 
     Ok(pack)
+}
+
+#[server]
+pub async fn upvote(pack: String, slug: String) -> Result<(), ServerFnError> {
+    let state = use_context::<crate::types::AppState>().unwrap();
+
+    query(
+        r#"
+        INSERT INTO votes (pack, slug, time, upvote, ip)
+        VALUES (?, ?, ?, 1, "127.0.0.1")
+        ON CONFLICT REPLACE
+    "#,
+    )
+    .bind(&pack)
+    .bind(&slug)
+    .bind(Utc::now().timestamp())
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    Ok(())
+}
+
+#[server]
+pub async fn downvote(pack: String, slug: String) -> Result<(), ServerFnError> {
+    let state = use_context::<crate::types::AppState>().unwrap();
+
+    query(
+        r#"
+        INSERT INTO votes (pack, slug, time, upvote, ip)
+        VALUES (?, ?, ?, -1, ?)
+        ON CONFLICT REPLACE
+    "#,
+    )
+    .bind(&pack)
+    .bind(&slug)
+    .bind(Utc::now().timestamp())
+    .bind(get_ip())
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    Ok(())
+}
+
+#[server]
+pub async fn remove_vote(pack: String, slug: String) -> Result<(), ServerFnError> {
+    let state = use_context::<crate::types::AppState>().unwrap();
+
+    query(
+        r#"
+        DELETE FROM votes
+        WHERE pack = ? AND slug = AND ip = ?
+    "#,
+    )
+    .bind(&pack)
+    .bind(&slug)
+    .bind(get_ip())
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    Ok(())
+}
+
+fn get_ip() -> String {
+    "127.0.0.1".to_string()
 }

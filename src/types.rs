@@ -1,4 +1,3 @@
-use reqwest::get;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
@@ -21,8 +20,10 @@ pub struct Mod {
 
 #[derive(Deserialize)]
 pub struct WebMod {
+    pub slug: String,
     pub title: String,
     pub description: String,
+    pub icon_url: String,
 }
 
 #[derive(Clone)]
@@ -30,13 +31,6 @@ pub struct FullMod {
     pub slug: String,
     pub title: String,
     pub description: String,
+    pub icon: String,
     pub votes: i32,
-}
-
-impl FullMod {
-    pub async fn from_mod(old_mod: Mod) -> Option<Self> {
-        let res = get(format!("https://api.modrinth.com/v2/project/{}", old_mod.slug)).await.ok()?;
-        let web_mod: WebMod = res.json().await.ok()?;
-        Some(Self { slug: old_mod.slug, title: web_mod.title, description: web_mod.description, votes: old_mod.votes })
-    }
 }
