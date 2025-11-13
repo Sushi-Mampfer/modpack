@@ -28,6 +28,7 @@ pub struct WebMod {
 
 #[derive(Clone)]
 pub struct FullMod {
+    pub pack: String,
     pub slug: String,
     pub title: String,
     pub description: String,

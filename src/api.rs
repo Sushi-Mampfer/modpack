@@ -48,9 +48,8 @@ pub async fn upvote(pack: String, slug: String) -> Result<(), ServerFnError> {
 
     query(
         r#"
-        INSERT INTO votes (pack, slug, time, upvote, ip)
+        INSERT OR REPLACE INTO votes (pack, slug, time, upvote, ip)
         VALUES (?, ?, ?, 1, "127.0.0.1")
-        ON CONFLICT REPLACE
     "#,
     )
     .bind(&pack)
@@ -68,9 +67,8 @@ pub async fn downvote(pack: String, slug: String) -> Result<(), ServerFnError> {
 
     query(
         r#"
-        INSERT INTO votes (pack, slug, time, upvote, ip)
+        INSERT OR REPLACE INTO votes (pack, slug, time, upvote, ip)
         VALUES (?, ?, ?, -1, ?)
-        ON CONFLICT REPLACE
     "#,
     )
     .bind(&pack)
@@ -90,7 +88,7 @@ pub async fn remove_vote(pack: String, slug: String) -> Result<(), ServerFnError
     query(
         r#"
         DELETE FROM votes
-        WHERE pack = ? AND slug = AND ip = ?
+        WHERE pack = ? AND slug = ? AND ip = ?
     "#,
     )
     .bind(&pack)
