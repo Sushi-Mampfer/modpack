@@ -66,22 +66,9 @@ pub async fn remove_mod(pack: String, admin: String, slug: String) -> Result<(),
     let state = use_context::<crate::types::AppState>().unwrap();
 
     query(r#"
-        SELECT EXISTS(SELECT 1 FROM packs WHERE id = ? and admin = ?)
-    "#).bind(&pack).bind(&admin).fetch_one(&state.pool).await.unwrap();
-
-    query(
-        r#"
-        INSERT OR IGNORE INTO mods (pack, slug, time, ip)
-        VALUES (?, ?, ?, ?)
-    "#,
-    )
-    .bind(&pack)
-    .bind(&slug)
-    .bind(Utc::now().timestamp())
-    .bind(get_ip())
-    .execute(&state.pool)
-    .await
-    .unwrap();
+        DELETE FROM mods
+        WHERE (EXISTS(SELECT 1 FROM packs WHERE id = ? and admin = ?) = 1 AND pack = ? and slug = ?)
+    "#).bind(&pack).bind(&admin).bind(&pack).bind(&slug).execute(&state.pool).await.unwrap();
     Ok(())
 }
 
