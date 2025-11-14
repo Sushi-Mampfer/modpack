@@ -6,13 +6,13 @@ pub struct AppState {
     pub pool: sqlx::sqlite::SqlitePool,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Pack {
     pub name: String,
     pub mods: Vec<Mod>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Mod {
     pub slug: String,
     pub votes: i32,

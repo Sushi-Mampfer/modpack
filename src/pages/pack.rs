@@ -1,6 +1,5 @@
 use leptos::{
-    component, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local, view,
-    IntoView,
+    IntoView, component, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local, view
 };
 use leptos_meta::Title;
 use leptos_router::hooks::use_params_map;
@@ -73,8 +72,12 @@ pub fn PackPage() -> impl IntoView {
                         .into_iter()
                         .map(|m| {
                             let m2 = m.clone();
-                            let m3 = m.clone();
-                            let m4 = m.clone();
+                            let (vote, set_vote, _) = use_local_storage::<
+                                i32,
+                                FromToStringCodec,
+                            >(format!("{}-{}", m.pack, m.slug));
+                            let start_vote = vote.get_untracked();
+
                             view! {
                                 <li>
                                     <img src=m.icon />
@@ -83,28 +86,20 @@ pub fn PackPage() -> impl IntoView {
                                     <button on:click=move |_| {
                                         let slug = m.slug.clone();
                                         let pack_id = m.pack.clone();
-                                        spawn_local(async {
-                                            let (vote, set_vote, _) = use_local_storage::<
-                                                i32,
-                                                FromToStringCodec,
-                                            >(format!("{}-{}", pack_id, slug));
-                                            if vote.get_untracked() > 0 {
-                                                set_vote.set(0);
-                                                remove_vote(pack_id, slug).await.unwrap()
-                                            } else {
-                                                set_vote.set(1);
-                                                upvote(pack_id, slug).await.unwrap()
-                                            }
-                                        });
+                                        if vote.get_untracked() > 0 {
+                                            set_vote.set(0);
+                                            spawn_local(async {
+                                                remove_vote(pack_id, slug).await.unwrap();
+                                            });
+                                        } else {
+                                            set_vote.set(1);
+                                            spawn_local(async {
+                                                upvote(pack_id, slug).await.unwrap();
+                                            });
+                                        }
                                     }>
                                         {move || {
-                                            if use_local_storage::<
-                                                i32,
-                                                FromToStringCodec,
-                                            >(format!("{}-{}", m2.pack, m2.slug))
-                                                .0
-                                                .get() > 0
-                                            {
+                                            if vote.get() > 0 {
                                                 view! {
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -143,32 +138,24 @@ pub fn PackPage() -> impl IntoView {
                                             }
                                         }}
                                     </button>
-                                    <p>{m.votes}</p>
+                                    <p>{move || m.votes - start_vote + vote.get()}</p>
                                     <button on:click=move |_| {
-                                        let slug = m3.slug.clone();
-                                        let pack_id = m3.pack.clone();
-                                        spawn_local(async {
-                                            let (vote, set_vote, _) = use_local_storage::<
-                                                i32,
-                                                FromToStringCodec,
-                                            >(format!("{}-{}", pack_id, slug));
-                                            if vote.get_untracked() < 0 {
-                                                set_vote.set(0);
+                                        let slug = m2.slug.clone();
+                                        let pack_id = m2.pack.clone();
+                                        if vote.get_untracked() < 0 {
+                                            set_vote.set(0);
+                                            spawn_local(async {
                                                 remove_vote(pack_id, slug).await.unwrap()
-                                            } else {
-                                                set_vote.set(-1);
+                                            });
+                                        } else {
+                                            set_vote.set(-1);
+                                            spawn_local(async {
                                                 downvote(pack_id, slug).await.unwrap()
-                                            }
-                                        });
+                                            });
+                                        }
                                     }>
                                         {move || {
-                                            if use_local_storage::<
-                                                i32,
-                                                FromToStringCodec,
-                                            >(format!("{}-{}", m4.pack, m4.slug))
-                                                .0
-                                                .get() < 0
-                                            {
+                                            if vote.get() < 0 {
                                                 view! {
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"

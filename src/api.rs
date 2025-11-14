@@ -16,7 +16,7 @@ pub async fn fetch_pack(pack: String) -> Result<Pack, ServerFnError> {
         SELECT 
             p.name,
             m.slug,
-            SUM(CASE v.upvote WHEN 1 THEN 1 WHEN 0 THEN -1 ELSE 0 END) as votes
+            SUM(CASE WHEN v.upvote > 0 THEN 1 WHEN v.upvote < 0 THEN -1 ELSE 0 END) as votes
         FROM packs p
         LEFT JOIN mods m ON p.id = m.pack
         LEFT JOIN votes v ON p.id = v.pack AND m.slug = v.slug
@@ -38,8 +38,51 @@ pub async fn fetch_pack(pack: String) -> Result<Pack, ServerFnError> {
             })
             .collect(),
     };
-
     Ok(pack)
+}
+
+#[server]
+pub async fn add_mod(pack: String, slug: String) -> Result<(), ServerFnError> {
+    let state = use_context::<crate::types::AppState>().unwrap();
+
+    query(
+        r#"
+        INSERT OR IGNORE INTO mods (pack, slug, time, ip)
+        VALUES (?, ?, ?, ?)
+    "#,
+    )
+    .bind(&pack)
+    .bind(&slug)
+    .bind(Utc::now().timestamp())
+    .bind(get_ip())
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    Ok(())
+}
+
+#[server]
+pub async fn remove_mod(pack: String, admin: String, slug: String) -> Result<(), ServerFnError> {
+    let state = use_context::<crate::types::AppState>().unwrap();
+
+    query(r#"
+        SELECT EXISTS(SELECT 1 FROM packs WHERE id = ? and admin = ?)
+    "#).bind(&pack).bind(&admin).fetch_one(&state.pool).await.unwrap();
+
+    query(
+        r#"
+        INSERT OR IGNORE INTO mods (pack, slug, time, ip)
+        VALUES (?, ?, ?, ?)
+    "#,
+    )
+    .bind(&pack)
+    .bind(&slug)
+    .bind(Utc::now().timestamp())
+    .bind(get_ip())
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    Ok(())
 }
 
 #[server]
@@ -49,9 +92,10 @@ pub async fn upvote(pack: String, slug: String) -> Result<(), ServerFnError> {
     query(
         r#"
         INSERT OR REPLACE INTO votes (pack, slug, time, upvote, ip)
-        VALUES (?, ?, ?, 1, "127.0.0.1")
+        VALUES (?, ?, ?, 1, ?)
     "#,
     )
+    .bind(get_ip())
     .bind(&pack)
     .bind(&slug)
     .bind(Utc::now().timestamp())
