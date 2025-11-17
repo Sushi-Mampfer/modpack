@@ -24,10 +24,12 @@ serde = { version = "1.0.228", features = ["serde_derive"] }
 futures = "0.3.31"
 chrono = "0.4.42"
 leptos-use = "0.16.3"
+rand = { version = "0.9.2", optional = true }
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 ssr = [
+    "rand",
     "sqlx",
     "dep:axum",
     "dep:tokio",

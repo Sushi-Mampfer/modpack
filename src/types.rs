@@ -9,6 +9,8 @@ pub struct AppState {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Pack {
     pub name: String,
+    pub version: String,
+    pub loader: String,
     pub mods: Vec<Mod>,
 }
 
@@ -18,7 +20,7 @@ pub struct Mod {
     pub votes: i32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct WebMod {
     pub slug: String,
     pub title: String,
@@ -34,4 +36,14 @@ pub struct FullMod {
     pub description: String,
     pub icon: String,
     pub votes: i32,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct ModSearch {
+    pub hits: Vec<WebMod>,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct Dependencies {
+    pub projects: Vec<WebMod>,
 }

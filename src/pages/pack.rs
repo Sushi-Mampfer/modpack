@@ -1,5 +1,5 @@
 use leptos::{
-    IntoView, component, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local, view
+    IntoView, component, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local, view
 };
 use leptos_meta::Title;
 use leptos_router::hooks::use_params_map;
@@ -23,6 +23,7 @@ pub fn PackPage() -> impl IntoView {
         spawn_local(async move {
             let pack = fetch_pack(pack_str.clone()).await.unwrap();
             if pack.mods.is_empty() {
+                set_name.set(Some(pack.name));
                 set_mods.set(Some(Vec::new()));
                 return;
             }
@@ -65,7 +66,16 @@ pub fn PackPage() -> impl IntoView {
             fallback=|| view! { <h1>Not found</h1> }
         >
             <Title text=move || name.get().unwrap() />
-            <ul>
+            <div class="fixed z100 bg-gray-800 w-full h-20 flex items-center">
+                <h1 class="text-xl lpl-5 font-bold pl-5 text-gray-100">{name.get().unwrap()}</h1>
+                <a
+                    class="ml-auto text-xl pr-5 text-gray-100"
+                    href=format!("/pack/{}/add", params.read().get("id").unwrap())
+                >
+                    Add mods
+                </a>
+            </div>
+            <ul class="w-full h-full bg-gray-700 pt-20 text-gray-100">
                 {move || {
                     mods.get()
                         .unwrap()
@@ -79,25 +89,28 @@ pub fn PackPage() -> impl IntoView {
                             let start_vote = vote.get_untracked();
 
                             view! {
-                                <li>
-                                    <img src=m.icon />
-                                    <h1>{m.title}</h1>
-                                    <p>{m.description}</p>
-                                    <button on:click=move |_| {
-                                        let slug = m.slug.clone();
-                                        let pack_id = m.pack.clone();
-                                        if vote.get_untracked() > 0 {
-                                            set_vote.set(0);
-                                            spawn_local(async {
-                                                remove_vote(pack_id, slug).await.unwrap();
-                                            });
-                                        } else {
-                                            set_vote.set(1);
-                                            spawn_local(async {
-                                                upvote(pack_id, slug).await.unwrap();
-                                            });
+                                <li class="pr-5 grid grid-cols-[5rem_15%_1fr_2.5rem_2.5rem_2.5rem] h-20 bg-gray-600 mb-1">
+                                    <img class="w-full h-full object-cover" src=m.icon />
+                                    <h1 class="leading-20 text-center font-bold">{m.title}</h1>
+                                    <p class="leading-20">{m.description}</p>
+                                    <button
+                                        class="flex items-center justify-center w-full"
+                                        on:click=move |_| {
+                                            let slug = m.slug.clone();
+                                            let pack_id = m.pack.clone();
+                                            if vote.get_untracked() > 0 {
+                                                set_vote.set(0);
+                                                spawn_local(async {
+                                                    remove_vote(pack_id, slug).await.unwrap();
+                                                });
+                                            } else {
+                                                set_vote.set(1);
+                                                spawn_local(async {
+                                                    upvote(pack_id, slug).await.unwrap();
+                                                });
+                                            }
                                         }
-                                    }>
+                                    >
                                         {move || {
                                             if vote.get() > 0 {
                                                 view! {
@@ -138,22 +151,27 @@ pub fn PackPage() -> impl IntoView {
                                             }
                                         }}
                                     </button>
-                                    <p>{move || m.votes - start_vote + vote.get()}</p>
-                                    <button on:click=move |_| {
-                                        let slug = m2.slug.clone();
-                                        let pack_id = m2.pack.clone();
-                                        if vote.get_untracked() < 0 {
-                                            set_vote.set(0);
-                                            spawn_local(async {
-                                                remove_vote(pack_id, slug).await.unwrap()
-                                            });
-                                        } else {
-                                            set_vote.set(-1);
-                                            spawn_local(async {
-                                                downvote(pack_id, slug).await.unwrap()
-                                            });
+                                    <p class="leading-20 text-center">
+                                        {move || m.votes - start_vote + vote.get()}
+                                    </p>
+                                    <button
+                                        class="flex items-center justify-center w-full"
+                                        on:click=move |_| {
+                                            let slug = m2.slug.clone();
+                                            let pack_id = m2.pack.clone();
+                                            if vote.get_untracked() < 0 {
+                                                set_vote.set(0);
+                                                spawn_local(async {
+                                                    remove_vote(pack_id, slug).await.unwrap()
+                                                });
+                                            } else {
+                                                set_vote.set(-1);
+                                                spawn_local(async {
+                                                    downvote(pack_id, slug).await.unwrap()
+                                                });
+                                            }
                                         }
-                                    }>
+                                    >
                                         {move || {
                                             if vote.get() < 0 {
                                                 view! {

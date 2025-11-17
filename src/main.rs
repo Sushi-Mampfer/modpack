@@ -31,6 +31,8 @@ async fn main() {
 	        id	TEXT NOT NULL,
 	        name    TEXT NOT NULL,
 	        admin	TEXT NOT NULL,
+            version TEXT NOT NULL,
+            loader  TEXT NOT NULL,
 	        PRIMARY KEY(id)
         )
     "#,
