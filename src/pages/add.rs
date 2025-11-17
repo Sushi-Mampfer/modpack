@@ -131,7 +131,7 @@ pub fn AddPage() -> impl IntoView {
                             view! {
                                 <li class="grid grid-cols-[5rem_15%_1fr_15rem] h-20 bg-gray-600 mb-1">
                                     <img class="w-full h-full object-cover" src=m.icon_url />
-                                    <h1 class="leading-20 text-center font-bold overflow-x-scroll">
+                                    <h1 class="text-center p-2.5 overflow-y-scroll font-bold">
                                         {m.title}
                                     </h1>
                                     <p class="p-2.5 overflow-y-scroll">{m.description}</p>
