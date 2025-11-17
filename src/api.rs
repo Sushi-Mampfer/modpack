@@ -4,10 +4,13 @@ use leptos::{
     prelude::{use_context, ServerFnError},
     server,
 };
+use leptos_axum::extract;
 #[cfg(feature = "ssr")]
-use rand::{distr::{Alphabetic, SampleString}, rng};
-#[cfg(feature = "ssr")]
-use sqlx::{query, Row};
+use {
+    axum::http::HeaderMap,
+    rand::{distr::{Alphabetic, SampleString}, rng},
+    sqlx::{query, Row}
+};
 
 #[server]
 pub async fn create_pack(name: String, loader: String, version: String) -> Result<(), ServerFnError> {
@@ -27,7 +30,7 @@ pub async fn create_pack(name: String, loader: String, version: String) -> Resul
                 r#"
                     INSERT OR IGNORE INTO mods (pack, slug, time, ip)
                     VALUES (?, "", ?, ?)
-                "#).bind(&pack).bind(Utc::now().timestamp()).bind(get_ip()).execute(&state.pool).await.unwrap();
+                "#).bind(&pack).bind(Utc::now().timestamp()).bind(get_ip().await).execute(&state.pool).await.unwrap();
                 leptos_axum::redirect(&format!("/pack/{}/{}", pack, admin));
                 return Ok(())
             },
@@ -42,7 +45,7 @@ pub async fn add_mods(pack: String, slugs: Vec<String>) -> Result<(), ServerFnEr
     if slugs.len() == 0 {return Ok(());}
     let state = use_context::<crate::types::AppState>().unwrap();
 
-    let ip = get_ip();
+    let ip = get_ip().await;
     let values = vec!["(?, ?, ?, ?)"; slugs.len()].join(", ");
     let query_text = &format!(r#"
         INSERT OR IGNORE INTO mods (pack, slug, time, ip)
@@ -113,7 +116,7 @@ pub async fn add_mod(pack: String, slug: String) -> Result<(), ServerFnError> {
     .bind(&pack)
     .bind(&slug)
     .bind(Utc::now().timestamp())
-    .bind(get_ip())
+    .bind(get_ip().await)
     .execute(&state.pool)
     .await
     .unwrap();
@@ -148,7 +151,7 @@ pub async fn upvote(pack: String, slug: String) -> Result<(), ServerFnError> {
     .bind(&pack)
     .bind(&slug)
     .bind(Utc::now().timestamp())
-    .bind(get_ip())
+    .bind(get_ip().await)
     .execute(&state.pool)
     .await
     .unwrap();
@@ -168,7 +171,7 @@ pub async fn downvote(pack: String, slug: String) -> Result<(), ServerFnError> {
     .bind(&pack)
     .bind(&slug)
     .bind(Utc::now().timestamp())
-    .bind(get_ip())
+    .bind(get_ip().await)
     .execute(&state.pool)
     .await
     .unwrap();
@@ -187,13 +190,14 @@ pub async fn remove_vote(pack: String, slug: String) -> Result<(), ServerFnError
     )
     .bind(&pack)
     .bind(&slug)
-    .bind(get_ip())
+    .bind(get_ip().await)
     .execute(&state.pool)
     .await
     .unwrap();
     Ok(())
 }
 
-fn get_ip() -> String {
-    "127.0.0.1".to_string()
+async fn get_ip() -> String {
+    let headers: HeaderMap = extract().await.unwrap();
+    headers.get("X-Forwarded-For").unwrap().to_str().unwrap().to_owned()
 }

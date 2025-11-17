@@ -1,5 +1,5 @@
 use leptos::{
-    IntoView, component, logging::log, prelude::*, task::spawn_local, view
+    IntoView, component, prelude::*, task::spawn_local, view
 };
 use leptos_meta::Title;
 use leptos_router::hooks::use_params_map;
@@ -135,43 +135,40 @@ pub fn AddPage() -> impl IntoView {
                                     <p class="leading-20">{m.description}</p>
                                     {
                                         let slug = m.slug;
-                                        if slugs.contains(&slug) {
-
-                                            view! { <button on:click=move |_| {}>Added</button> }
-                                                .into_view()
-                                        } else {
-                                            view! {
-                                                <button on:click={
+                                        let added = slugs.contains(&slug);
+                                        view! {
+                                            <button on:click={
+                                                let slug = slug.clone();
+                                                let pack = pack.clone();
+                                                move |_| {
+                                                    if added {
+                                                        return;
+                                                    }
                                                     let slug = slug.clone();
                                                     let pack = pack.clone();
-                                                    move |_| {
-                                                        let slug = slug.clone();
-                                                        let pack = pack.clone();
-                                                        spawn_local(async move {
-                                                            let dependencies: Dependencies = get(
-                                                                    format!(
-                                                                        "https://api.modrinth.com/v2/project/{}/dependencies",
-                                                                        slug,
-                                                                    ),
-                                                                )
-                                                                .await
-                                                                .unwrap()
-                                                                .json()
-                                                                .await
-                                                                .unwrap();
-                                                            let mut slugs: Vec<String> = dependencies
-                                                                .projects
-                                                                .into_iter()
-                                                                .map(|m| m.slug)
-                                                                .collect();
-                                                            slugs.push(slug);
-                                                            add_mods(pack, slugs).await.unwrap();
-                                                            force_reload.set(());
-                                                        });
-                                                    }
-                                                }>Add</button>
-                                            }
-                                                .into_view()
+                                                    spawn_local(async move {
+                                                        let dependencies: Dependencies = get(
+                                                                format!(
+                                                                    "https://api.modrinth.com/v2/project/{}/dependencies",
+                                                                    slug,
+                                                                ),
+                                                            )
+                                                            .await
+                                                            .unwrap()
+                                                            .json()
+                                                            .await
+                                                            .unwrap();
+                                                        let mut slugs: Vec<String> = dependencies
+                                                            .projects
+                                                            .into_iter()
+                                                            .map(|m| m.slug)
+                                                            .collect();
+                                                        slugs.push(slug);
+                                                        add_mods(pack, slugs).await.unwrap();
+                                                        force_reload.set(());
+                                                    });
+                                                }
+                                            }>{if added { "Added" } else { "Add" }}</button>
                                         }
                                     }
                                 </li>
