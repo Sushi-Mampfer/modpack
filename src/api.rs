@@ -4,10 +4,10 @@ use leptos::{
     prelude::{use_context, ServerFnError},
     server,
 };
-use leptos_axum::extract;
 #[cfg(feature = "ssr")]
 use {
     axum::http::HeaderMap,
+    leptos_axum::extract,
     rand::{distr::{Alphabetic, SampleString}, rng},
     sqlx::{query, Row}
 };
@@ -197,6 +197,7 @@ pub async fn remove_vote(pack: String, slug: String) -> Result<(), ServerFnError
     Ok(())
 }
 
+#[cfg(feature = "ssr")]
 async fn get_ip() -> String {
     let headers: HeaderMap = extract().await.unwrap();
     headers.get("X-Forwarded-For").unwrap().to_str().unwrap().to_owned()
